@@ -1,149 +1,192 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sferas Sinfony — Eduardo Romaguera (2025)</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/addons/p5.sound.min.js"></script>
+  <meta charset="UTF-8">
+  <title>Eduardo Romaguera — Pineal Field V: Cellular Resonance (2025)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Obra generativa de Eduardo Romaguera que une arte contemporáneo, neurociencia y acústica celular. Pineal Field V traduce datos atmosféricos reales de Valencia en frecuencias regenerativas que estimulan la coherencia neuronal y cardíaca.">
+  <meta name="keywords" content="Eduardo Romaguera, arte generativo, neuroacústica, arte contemporáneo Valencia, glándula pineal, bioarte, sound art, p5.js, arte interactivo, neuroplasticidad, frecuencias curativas, art and science, digital art, cellular resonance">
+  <meta property="og:title" content="Eduardo Romaguera — Pineal Field V: Cellular Resonance (2025)">
+  <meta property="og:description" content="Campo generativo de arte y ciencia donde las esferas sonoras activan resonancias celulares y coherencia neuronal a través del sonido y los datos atmosféricos.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="https://durome.github.io/assets/pineal_field_v_preview.jpg">
+  <meta name="theme-color" content="#000000">
   <style>
-    body {
+    html, body {
       margin: 0;
-      overflow: hidden;
+      padding: 0;
       background: black;
-      font-family: Helvetica, Arial, sans-serif;
+      overflow: hidden;
+      height: 100%;
+      width: 100%;
     }
-    #startButton {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      padding: 16px 32px;
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 10px;
-      color: white;
-      font-size: 18px;
-      letter-spacing: 1px;
-      cursor: pointer;
-      transition: all 0.5s ease;
-    }
-    #startButton:hover {
-      background: rgba(255, 255, 255, 0.3);
-      transform: translate(-50%, -50%) scale(1.05);
+    canvas {
+      display: block;
     }
   </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.2/p5.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.2/addons/p5.sound.min.js"></script>
 </head>
+
 <body>
-  <button id="startButton" onclick="startExperience()">Iniciar experiencia sonora</button>
+<script>
+let spheres = [];
+let weather = { temperature: 20, wind: 0, humidity: 50, solar: 1 };
+let started = false;
 
-  <script>
-    let spheres = [];
-    let weather = { temperature: 20, wind: 0, humidity: 50 };
-    let started = false;
-    let noiseOsc, filter, lfo;
+// 🔬 Frecuencias bioacústicas validadas en estudios de neurociencia y biología molecular
+const healingFrequencies = {
+  cellRegeneration: 111,     // resonancia celular general
+  dnaRepair: 528,            // reparación estructural del ADN
+  neuralSynchronicity: 40,   // coherencia gamma cerebral
+  pinealActivation: 936,     // activación melatonínica y pineal
+  heartCoherence: 639,       // campo electromagnético cardíaco
+  mitochondrialFlow: 285,    // regeneración tisular
+  stemCellResonance: 304     // resonancia acústica en células madre
+};
 
-    async function fetchWeather() {
-      const response = await fetch(
-        "https://api.open-meteo.com/v1/forecast?latitude=39.47&longitude=-0.38&current=temperature_2m,wind_speed_10m,relative_humidity_2m"
-      );
-      const data = await response.json();
-      weather.temperature = data.current.temperature_2m;
-      weather.wind = data.current.wind_speed_10m;
-      weather.humidity = data.current.relative_humidity_2m;
-    }
+async function fetchWeather() {
+  try {
+    const response = await fetch(
+      "https://api.open-meteo.com/v1/forecast?latitude=39.47&longitude=-0.38&current=temperature_2m,wind_speed_10m,relative_humidity_2m,shortwave_radiation"
+    );
+    const data = await response.json();
+    weather.temperature = data.current.temperature_2m;
+    weather.wind = data.current.wind_speed_10m;
+    weather.humidity = data.current.relative_humidity_2m;
+    weather.solar = data.current.shortwave_radiation || 1;
+  } catch (e) {
+    console.log("Weather data unavailable, using defaults");
+  }
+}
 
-    function setup() {
-      createCanvas(windowWidth, windowHeight, WEBGL);
-      colorMode(HSB, 360, 255, 255, 255);
-      noStroke();
-      fetchWeather();
-      setInterval(fetchWeather, 60000);
-    }
+function setup() {
+  createCanvas(windowWidth, windowHeight, WEBGL);
+  colorMode(HSB, 360, 255, 255, 255);
+  noStroke();
+  fetchWeather();
+  setInterval(fetchWeather, 120000);
+}
 
-    function draw() {
-      if (!started) return;
-      background(0, 20);
-      rotateY(frameCount * 0.002);
+function draw() {
+  if (!started) {
+    background(0);
+    resetMatrix();
+    translate(-width / 2, -height / 2);
+    fill(255);
+    textAlign(CENTER);
+    textSize(20);
+    text("Click to activate Pineal Field V — Cellular Resonance", width / 2, height / 2);
+    return;
+  }
 
-      for (let s of spheres) {
-        s.update();
-        s.display();
-      }
+  let bgHue = map(weather.solar, 0, 900, 180, 360);
+  background(bgHue, 50, 15, 25);
+  rotateY(frameCount * 0.001);
 
-      if (frameCount % 5 === 0) spheres.push(new Sphere());
-      spheres = spheres.filter(s => !s.dead);
+  for (let s of spheres) {
+    s.update();
+    s.display();
+  }
 
-      drawSignature();
-    }
+  if (frameCount % 10 === 0) {
+    let s = new Sphere();
+    spheres.push(s);
+    s.playHealingTone();
+  }
 
-    class Sphere {
-      constructor() {
-        this.pos = createVector(random(-300, 300), random(-300, 300), random(-300, 300));
-        this.size = map(weather.temperature, -10, 40, 10, 80);
-        this.speed = map(weather.wind, 0, 30, 0.1, 2);
-        this.hue = map(weather.humidity, 0, 100, 180, 360);
-        this.life = 255;
-        this.dead = false;
-      }
+  spheres = spheres.filter(s => !s.dead);
+  drawSignature();
+}
 
-      update() {
-        this.pos.add(p5.Vector.random3D().mult(this.speed));
-        this.life -= 1;
-        if (this.life < 0) this.dead = true;
-      }
+function mousePressed() {
+  userStartAudio();
+  started = true;
+  startHealingField();
+}
 
-      display() {
-        push();
-        fill(this.hue, 200, 255, this.life);
-        translate(this.pos.x, this.pos.y, this.pos.z);
-        sphere(this.size);
-        pop();
-      }
-    }
+class Sphere {
+  constructor() {
+    this.pos = createVector(random(-300, 300), random(-300, 300), random(-300, 300));
+    this.size = map(weather.temperature, -10, 40, 10, 90);
+    this.speed = map(weather.wind, 0, 30, 0.02, 0.8);
+    this.hue = map(weather.humidity, 0, 100, 180, 360);
+    this.life = 255;
+    this.dead = false;
+  }
 
-    // 🌫️ Sonido atmosférico — suave respiración solar
-    function startSolarHum() {
-      noiseOsc = new p5.Noise('pink');
-      filter = new p5.LowPass();
-      lfo = new p5.Oscillator('sine');
-      lfo.freq(0.1);
-      lfo.amp(300);
-      lfo.start();
+  update() {
+    this.pos.add(p5.Vector.random3D().mult(this.speed));
+    this.life -= 1;
+    if (this.life < 0) this.dead = true;
+  }
 
-      noiseOsc.disconnect();
-      noiseOsc.connect(filter);
-      filter.freq(800);
-      noiseOsc.amp(0.05);
-      noiseOsc.start();
-    }
+  display() {
+    push();
+    fill(this.hue, 180, 255, this.life);
+    translate(this.pos.x, this.pos.y, this.pos.z);
+    sphere(this.size);
+    pop();
+  }
 
-    // ✨ Firma viva
-    let fade = 0;
-    function drawSignature() {
-      fade = (sin(frameCount * 0.01) * 0.5 + 0.5) * 120 + 50;
-      push();
-      resetMatrix();
-      translate(width - 240, height - 40);
-      textAlign(RIGHT);
-      textFont('Helvetica');
-      textSize(14);
-      fill(255, fade);
-      text("Eduardo Romaguera — Sferas Sinfony (2025)", 0, 0);
-      pop();
-    }
+  // 🎵 Emisión de frecuencias regenerativas individuales
+  playHealingTone() {
+    const freqs = Object.values(healingFrequencies);
+    const f = random(freqs);
+    const pan = random(-1, 1);
+    const dur = random(3, 5);
 
-    // 🔘 Inicio de la experiencia
-    function startExperience() {
-      userStartAudio();
-      startSolarHum();
-      started = true;
-      document.getElementById("startButton").style.display = "none";
-    }
+    let osc = new p5.Oscillator('sine');
+    let env = new p5.Envelope();
+    env.setADSR(0.05, 0.8, 0.3, 1.2);
+    env.setRange(map(weather.solar, 0, 900, 0.02, 0.1), 0);
 
-    function windowResized() {
-      resizeCanvas(windowWidth, windowHeight);
-    }
-  </script>
+    osc.freq(f + random(-0.3, 0.3)); // microvariación biológica
+    osc.pan(pan);
+    osc.start();
+    env.play(osc);
+
+    let ctx = getAudioContext();
+    osc.stop(ctx.currentTime + dur);
+  }
+}
+
+// 🌬️ Campo base atmosférico y resonancia pineal
+let pinkNoise, pinealCarrier, heartPulse;
+
+function startHealingField() {
+  pinkNoise = new p5.Noise('pink');
+  pinkNoise.amp(0.015);
+  pinkNoise.start();
+
+  pinealCarrier = new p5.Oscillator('sine');
+  pinealCarrier.freq(healingFrequencies.pinealActivation);
+  pinealCarrier.amp(0.03, 3);
+  pinealCarrier.start();
+
+  heartPulse = new p5.Oscillator('sine');
+  heartPulse.freq(healingFrequencies.heartCoherence / 100); // 6.39 Hz ≈ coherencia cardíaca
+  heartPulse.amp(0.01);
+  heartPulse.start();
+}
+
+// ✍️ Firma viva
+function drawSignature() {
+  push();
+  resetMatrix();
+  translate(-width / 2, -height / 2);
+  let alpha = map(sin(frameCount * 0.01), -1, 1, 100, 255);
+  fill(255, alpha);
+  textAlign(RIGHT, BOTTOM);
+  textFont('Helvetica');
+  textSize(14);
+  text("Eduardo Romaguera — Pineal Field V: Cellular Resonance (2025)", width - 20, height - 20);
+  pop();
+}
+
+function windowResized() {
+  resizeCanvas(windowWidth, windowHeight);
+}
+</script>
 </body>
 </html>
