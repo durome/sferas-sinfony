@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Pineal Field V – Bioacoustic Regeneration</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Obra generativa de Eduardo Romaguera que fusiona arte contemporáneo y neurociencia sonora, conectando datos atmosféricos reales con frecuencias de regeneración celular.">
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: black;
+      overflow: hidden;
+      height: 100%;
+      width: 100%;
+    }
+    canvas {
+      display: block;
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/addons/p5.sound.min.js"></script>
+</head>
+<body>
+<script>
+let spheres = [];
+let weather = { temperature: 20, wind: 0, humidity: 50, solar: 1 };
+let started = false;
+
+const healingFrequencies = {
+  cellRepair: 111,
+  dnaIntegrity: 528,
+  tissueRegrowth: 40,
+  pinealActivation: 936,
+  neuralCoherence: 8.3
+};
+
+async function fetchWeather() {
+  const response = await fetch(
+    "https://api.open-meteo.com/v1/forecast?latitude=39.47&longitude=-0.38&current=temperature_2m,wind_speed_10m,relative_humidity_2m,shortwave_radiation"
+  );
+  const data = await response.json();
+  weather.temperature = data.current.temperature_2m;
+  weather.wind = data.current.wind_speed_10m;
+  weather.humidity = data.current.relative_humidity_2m;
+  weather.solar = data.current.shortwave_radiation || 1;
+}
+
+function setup() {
+  createCanvas(windowWidth, windowHeight, WEBGL);
+  colorMode(HSB, 360, 255, 255, 255);
+  noStroke();
+  fetchWeather();
+  setInterval(fetchWeather, 120000);
+}
+
+function draw() {
+  if (!started) {
+    background(0);
+    resetMatrix();
+    translate(-width / 2, -height / 2);
+    fill(255);
+    textAlign(CENTER);
+    textSize(20);
+    text("Click to activate Pineal Field V – Bioacoustic Resonance", width / 2, height / 2);
+    return;
+  }
+
+  let bgHue = map(weather.solar, 0, 900, 180, 360);
+  background(bgHue, 50, 15, 25);
+  rotateY(frameCount * 0.001);
+
+  for (let s of spheres) {
+    s.update();
+    s.display();
+  }
+
+  if (frameCount % 8 === 0) {
+    let s = new Sphere();
+    spheres.push(s);
+    s.playSound();
+  }
+
+  spheres = spheres.filter(s => !s.dead);
+}
+
+function mousePressed() {
+  userStartAudio();
+  started = true;
+  startHealingAmbience();
+}
+
+class Sphere {
+  constructor() {
+    this.pos = createVector(random(-300, 300), random(-300, 300), random(-300, 300));
+    this.size = map(weather.temperature, -10, 40, 10, 90);
+    this.speed = map(weather.wind, 0, 30, 0.02, 0.8);
+    this.hue = map(weather.humidity, 0, 100, 180, 360);
+    this.life = 255;
+    this.dead = false;
+  }
+
+  update() {
+    this.pos.add(p5.Vector.random3D().mult(this.speed));
+    this.life -= 1;
+    if (this.life < 0) this.dead = true;
+  }
+
+  display() {
+    push();
+    fill(this.hue, 180, 255, this.life);
+    translate(this.pos.x, this.pos.y, this.pos.z);
+    sphere(this.size);
+    pop();
+  }
+
+  playSound() {
+    const freqs = Object.values(healingFrequencies);
+    const f = random(freqs);
+    const pan = random(-1, 1);
+    const dur = random(2, 4);
+    let osc = new p5.Oscillator('sine');
+    let env = new p5.Envelope();
+    env.setADSR(0.1, 0.5, 0.4, 1.2);
+    env.setRange(map(weather.solar, 0, 900, 0.02, 0.15), 0);
+    osc.freq(f);
+    osc.pan(pan);
+    osc.start();
+    env.play(osc);
+    let ctx = getAudioContext();
+    osc.stop(ctx.currentTime + dur);
+  }
+}
+
+let noiseOsc, lfoLeft, lfoRight;
+
+function startHealingAmbience() {
+  noiseOsc = new p5.Noise('pink');
+  noiseOsc.amp(0.02);
+  noiseOsc.start();
+
+  lfoLeft = new p5.Oscillator('sine');
+  lfoRight = new p5.Oscillator('sine');
+
+  lfoLeft.freq(healingFrequencies.neuralCoherence - 0.1);
+  lfoRight.freq(healingFrequencies.neuralCoherence + 0.1);
+
+  lfoLeft.pan(-1);
+  lfoRight.pan(1);
+
+  lfoLeft.start();
+  lfoRight.start();
+}
+</script>
+</body>
+</html>
