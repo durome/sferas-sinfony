@@ -1,156 +1,149 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Pineal Field V – Bioacoustic Regeneration</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Obra generativa de Eduardo Romaguera que fusiona arte contemporáneo y neurociencia sonora, conectando datos atmosféricos reales con frecuencias de regeneración celular.">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sferas Sinfony — Eduardo Romaguera (2025)</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/addons/p5.sound.min.js"></script>
   <style>
-    html, body {
+    body {
       margin: 0;
-      padding: 0;
-      background: black;
       overflow: hidden;
-      height: 100%;
-      width: 100%;
+      background: black;
+      font-family: Helvetica, Arial, sans-serif;
     }
-    canvas {
-      display: block;
+    #startButton {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      padding: 16px 32px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 10px;
+      color: white;
+      font-size: 18px;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: all 0.5s ease;
+    }
+    #startButton:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: translate(-50%, -50%) scale(1.05);
     }
   </style>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/addons/p5.sound.min.js"></script>
 </head>
 <body>
-<script>
-let spheres = [];
-let weather = { temperature: 20, wind: 0, humidity: 50, solar: 1 };
-let started = false;
+  <button id="startButton" onclick="startExperience()">Iniciar experiencia sonora</button>
 
-const healingFrequencies = {
-  cellRepair: 111,
-  dnaIntegrity: 528,
-  tissueRegrowth: 40,
-  pinealActivation: 936,
-  neuralCoherence: 8.3
-};
+  <script>
+    let spheres = [];
+    let weather = { temperature: 20, wind: 0, humidity: 50 };
+    let started = false;
+    let noiseOsc, filter, lfo;
 
-async function fetchWeather() {
-  const response = await fetch(
-    "https://api.open-meteo.com/v1/forecast?latitude=39.47&longitude=-0.38&current=temperature_2m,wind_speed_10m,relative_humidity_2m,shortwave_radiation"
-  );
-  const data = await response.json();
-  weather.temperature = data.current.temperature_2m;
-  weather.wind = data.current.wind_speed_10m;
-  weather.humidity = data.current.relative_humidity_2m;
-  weather.solar = data.current.shortwave_radiation || 1;
-}
+    async function fetchWeather() {
+      const response = await fetch(
+        "https://api.open-meteo.com/v1/forecast?latitude=39.47&longitude=-0.38&current=temperature_2m,wind_speed_10m,relative_humidity_2m"
+      );
+      const data = await response.json();
+      weather.temperature = data.current.temperature_2m;
+      weather.wind = data.current.wind_speed_10m;
+      weather.humidity = data.current.relative_humidity_2m;
+    }
 
-function setup() {
-  createCanvas(windowWidth, windowHeight, WEBGL);
-  colorMode(HSB, 360, 255, 255, 255);
-  noStroke();
-  fetchWeather();
-  setInterval(fetchWeather, 120000);
-}
+    function setup() {
+      createCanvas(windowWidth, windowHeight, WEBGL);
+      colorMode(HSB, 360, 255, 255, 255);
+      noStroke();
+      fetchWeather();
+      setInterval(fetchWeather, 60000);
+    }
 
-function draw() {
-  if (!started) {
-    background(0);
-    resetMatrix();
-    translate(-width / 2, -height / 2);
-    fill(255);
-    textAlign(CENTER);
-    textSize(20);
-    text("Click to activate Pineal Field V – Bioacoustic Resonance", width / 2, height / 2);
-    return;
-  }
+    function draw() {
+      if (!started) return;
+      background(0, 20);
+      rotateY(frameCount * 0.002);
 
-  let bgHue = map(weather.solar, 0, 900, 180, 360);
-  background(bgHue, 50, 15, 25);
-  rotateY(frameCount * 0.001);
+      for (let s of spheres) {
+        s.update();
+        s.display();
+      }
 
-  for (let s of spheres) {
-    s.update();
-    s.display();
-  }
+      if (frameCount % 5 === 0) spheres.push(new Sphere());
+      spheres = spheres.filter(s => !s.dead);
 
-  if (frameCount % 8 === 0) {
-    let s = new Sphere();
-    spheres.push(s);
-    s.playSound();
-  }
+      drawSignature();
+    }
 
-  spheres = spheres.filter(s => !s.dead);
-}
+    class Sphere {
+      constructor() {
+        this.pos = createVector(random(-300, 300), random(-300, 300), random(-300, 300));
+        this.size = map(weather.temperature, -10, 40, 10, 80);
+        this.speed = map(weather.wind, 0, 30, 0.1, 2);
+        this.hue = map(weather.humidity, 0, 100, 180, 360);
+        this.life = 255;
+        this.dead = false;
+      }
 
-function mousePressed() {
-  userStartAudio();
-  started = true;
-  startHealingAmbience();
-}
+      update() {
+        this.pos.add(p5.Vector.random3D().mult(this.speed));
+        this.life -= 1;
+        if (this.life < 0) this.dead = true;
+      }
 
-class Sphere {
-  constructor() {
-    this.pos = createVector(random(-300, 300), random(-300, 300), random(-300, 300));
-    this.size = map(weather.temperature, -10, 40, 10, 90);
-    this.speed = map(weather.wind, 0, 30, 0.02, 0.8);
-    this.hue = map(weather.humidity, 0, 100, 180, 360);
-    this.life = 255;
-    this.dead = false;
-  }
+      display() {
+        push();
+        fill(this.hue, 200, 255, this.life);
+        translate(this.pos.x, this.pos.y, this.pos.z);
+        sphere(this.size);
+        pop();
+      }
+    }
 
-  update() {
-    this.pos.add(p5.Vector.random3D().mult(this.speed));
-    this.life -= 1;
-    if (this.life < 0) this.dead = true;
-  }
+    // 🌫️ Sonido atmosférico — suave respiración solar
+    function startSolarHum() {
+      noiseOsc = new p5.Noise('pink');
+      filter = new p5.LowPass();
+      lfo = new p5.Oscillator('sine');
+      lfo.freq(0.1);
+      lfo.amp(300);
+      lfo.start();
 
-  display() {
-    push();
-    fill(this.hue, 180, 255, this.life);
-    translate(this.pos.x, this.pos.y, this.pos.z);
-    sphere(this.size);
-    pop();
-  }
+      noiseOsc.disconnect();
+      noiseOsc.connect(filter);
+      filter.freq(800);
+      noiseOsc.amp(0.05);
+      noiseOsc.start();
+    }
 
-  playSound() {
-    const freqs = Object.values(healingFrequencies);
-    const f = random(freqs);
-    const pan = random(-1, 1);
-    const dur = random(2, 4);
-    let osc = new p5.Oscillator('sine');
-    let env = new p5.Envelope();
-    env.setADSR(0.1, 0.5, 0.4, 1.2);
-    env.setRange(map(weather.solar, 0, 900, 0.02, 0.15), 0);
-    osc.freq(f);
-    osc.pan(pan);
-    osc.start();
-    env.play(osc);
-    let ctx = getAudioContext();
-    osc.stop(ctx.currentTime + dur);
-  }
-}
+    // ✨ Firma viva
+    let fade = 0;
+    function drawSignature() {
+      fade = (sin(frameCount * 0.01) * 0.5 + 0.5) * 120 + 50;
+      push();
+      resetMatrix();
+      translate(width - 240, height - 40);
+      textAlign(RIGHT);
+      textFont('Helvetica');
+      textSize(14);
+      fill(255, fade);
+      text("Eduardo Romaguera — Sferas Sinfony (2025)", 0, 0);
+      pop();
+    }
 
-let noiseOsc, lfoLeft, lfoRight;
+    // 🔘 Inicio de la experiencia
+    function startExperience() {
+      userStartAudio();
+      startSolarHum();
+      started = true;
+      document.getElementById("startButton").style.display = "none";
+    }
 
-function startHealingAmbience() {
-  noiseOsc = new p5.Noise('pink');
-  noiseOsc.amp(0.02);
-  noiseOsc.start();
-
-  lfoLeft = new p5.Oscillator('sine');
-  lfoRight = new p5.Oscillator('sine');
-
-  lfoLeft.freq(healingFrequencies.neuralCoherence - 0.1);
-  lfoRight.freq(healingFrequencies.neuralCoherence + 0.1);
-
-  lfoLeft.pan(-1);
-  lfoRight.pan(1);
-
-  lfoLeft.start();
-  lfoRight.start();
-}
-</script>
+    function windowResized() {
+      resizeCanvas(windowWidth, windowHeight);
+    }
+  </script>
 </body>
 </html>
